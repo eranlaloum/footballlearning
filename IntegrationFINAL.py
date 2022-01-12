@@ -19,8 +19,8 @@ touch_wall=False
 #strikes=[]
 initial_positions=[] #x,y,vx,vy,hit/not (hit-1, not-0)
 
-#SCENE_FILE = '/home/nitzan/CoppeliaSim/ED_learning.ttt'
-SCENE_FILE = '/home/user/Desktop/robotic_football_learning-main/ED_learning.ttt'
+SCENE_FILE = '/home/nitzan/CoppeliaSim/ED_learning.ttt'
+# SCENE_FILE = '/home/user/Desktop/robotic_football_learning-main/ED_learning.ttt'
 pr = PyRep()
 pr.launch(SCENE_FILE, headless=False)
 pr.start()
@@ -31,14 +31,12 @@ pi = math.pi
 agent = UR5()
 
 ## Initialization Mean-Shift Algorithm
-pr.step()
-z=1
-while z<2:
+# pr.step()
+z=0
+while z<4:
     img = cam.capture_rgb()
     img = np.uint8(img * 256)
     frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # frame = frame[0:750, ]
-    #cv2.imwrite('frame 1' + '.jpeg', frame)
     z=z+1
     pr.step()
 # START
@@ -54,7 +52,6 @@ track_window = (x, y, w, h)
 roi = frame[y:y + h, x:x + w]
 # converting BGR to HSV format
 imgHSV = cv.cvtColor(roi, cv.COLOR_BGR2HSV)
-cv2.imwrite('HEY' + '.jpeg', imgHSV)
 # apply mask on the HSV frame
 lower_red = np.array([0, 50, 50])
 upper_red = np.array([10, 255, 255])
@@ -125,19 +122,12 @@ def ballCoordinates(x, y, w, h):  # work with image format without imread
     #ypos = ypos - Originy
     #xpos = (xpos / 723) * 1.8
     #ypos = (ypos / 352) * 0.9
-    #Vx = abs((xpos - prevX) / 0.05)
-    #Vy = abs((ypos - prevY) / 0.05)
     Vx = (xpos - prevX) / 0.05
     Vy = (ypos - prevY) / 0.05
     prevX = xpos
     prevY = ypos
     return [xpos, ypos, Vx, Vy]
-#     # get all non zero values
-#     # nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(mask_red, connectivity=8)
-#     # nb_components = nb_components - 1  # taking out the background which is also considered a componentbut
-#     if nb_components == 0:
-#         touch_wall = True
-#         return "no ball"
+
 
 
 def Frame_ballCoordinates():
@@ -151,15 +141,20 @@ def Frame_ballCoordinates():
     img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
     img = img[450:962, 0:1024]  # region of interest
     frame = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-    # cv2.imwrite('frame ' + str(z) + '.jpeg', frame)
-    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV_FULL)
+    imgHSV = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # convert to hsv
+    lower_red = np.array([0, 50, 50])
+    upper_red = np.array([10, 255, 255])
+    mask_red = cv2.inRange(imgHSV, lower_red, upper_red)
+    nb_components, output, stats, centroids = cv2.connectedComponentsWithStats(mask_red, connectivity=8)
+    nb_components = nb_components - 1  # taking out the background which is also considered a componentbut
+    if nb_components == 0:
+        touch_wall = True
+        return "no ball"
+    hsv = cv.cvtColor(frame, cv.COLOR_BGR2HSV)
     dst = cv.calcBackProject([hsv], [0], roi_hist, [0, 180], 1)
     # apply meanshift to get the new location
     _, track_window = cv.meanShift(dst, track_window, term_crit)
-    # Draw it on image
     x, y, w, h = track_window
-    # print(x, y, w, h)
-    # cam.set_entity_to_render(ball.get_handle())
     return ballCoordinates(x, y, w, h)
 
 def randomposition():
@@ -182,7 +177,7 @@ def move_arm(position, quaternion, ignore_collisions=False):  # move the robot t
     print(num_games)
     while not done:
         done = arm_path.step()
-        # Frame_ballCoordinates()
+        Frame_ballCoordinates()
         pr.step()
         print('num_games')
     arm_path.clear_visualization()
