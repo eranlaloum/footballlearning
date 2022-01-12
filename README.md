@@ -15,3 +15,6 @@ In addition, you need to update few parameters: exploration_rate, episodes - eac
 
 In order to see the performance of the robot after it finished the learning session, you need to read from Q_table27, as 
 this is the last file of the learning.
+
+The script IntegrationFINAL is an upgrade to the script Policy Game.
+Instead of identification of the ball movement based on Segmentation of the ball color, in the IntegrationFINAL script- the algorithm identifies the ball movement using a tracking algorithm based on MeanShift.
